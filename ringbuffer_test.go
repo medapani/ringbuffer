@@ -1,4 +1,4 @@
-package main
+package ringbuffer
 
 import (
 	"math/rand"
@@ -7,6 +7,13 @@ import (
 )
 
 var benchmarkResult int
+
+// User は構造体を格納するベンチマーク用のデータです。
+type User struct {
+	Name string
+	Age  int
+	Data []byte
+}
 
 func BenchmarkWrite(b *testing.B) {
 	rb, err := NewRingBuffer[int](1024)

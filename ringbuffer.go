@@ -1,15 +1,17 @@
-// package main リングバッファを実装
-package main
+// Package ringbuffer はリングバッファを実装します。
+package ringbuffer
 
 import (
 	"fmt"
 )
 
+// IRingBuffer はリングバッファの読み書きインターフェースです.
 type IRingBuffer[T any] interface {
 	Write(v T)
 	Read() (T, bool)
 }
 
+// RingBuffer は固定長のリングバッファです.
 type RingBuffer[T any] struct {
 	buf   []T    // データを格納する領域
 	write uint64 // 次にデータを書き込む位置
@@ -17,7 +19,7 @@ type RingBuffer[T any] struct {
 	mask  uint64 // len(rb.buf) - 1 をしたくないため
 }
 
-// リングバッファへ書き込みます。
+// Write はリングバッファへ書き込みます。
 func (rb *RingBuffer[T]) Write(v T) {
 	// 満杯ならreadを進める
 	if rb.write-rb.read == uint64(len(rb.buf)) {
@@ -29,7 +31,7 @@ func (rb *RingBuffer[T]) Write(v T) {
 	rb.write++
 }
 
-// リングバッファから読み込みます。
+// Read はリングバッファから読み込みます。
 func (rb *RingBuffer[T]) Read() (T, bool) {
 	var zero T
 
@@ -48,7 +50,7 @@ func (rb *RingBuffer[T]) Read() (T, bool) {
 	return ret, true
 }
 
-// リングバッファを作成します。
+// NewRingBuffer は指定したサイズのリングバッファを作成します。
 func NewRingBuffer[T any](size uint64) (*RingBuffer[T], error) {
 	// 2のn乗であるかチェック
 	if size > 0 && size&(size-1) == 0 {
