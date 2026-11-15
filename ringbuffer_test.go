@@ -1,6 +1,7 @@
 package ringbuffer
 
 import (
+	"math"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -246,6 +247,91 @@ func TestRingBufferRandom(t *testing.T) {
 				)
 			}
 		}
+	}
+}
+
+func TestRingBufferLen(t *testing.T) {
+	tests := []struct {
+		name  string
+		write uint64
+		read  uint64
+		want  uint64
+	}{
+		{
+			name:  "empty",
+			write: 0,
+			read:  0,
+			want:  0,
+		},
+		{
+			name:  "one element",
+			write: 1,
+			read:  0,
+			want:  1,
+		},
+		{
+			name:  "partially filled",
+			write: 5,
+			read:  2,
+			want:  3,
+		},
+		{
+			name:  "full",
+			write: 8,
+			read:  0,
+			want:  8,
+		},
+		{
+			name:  "counter overflow",
+			write: 1,
+			read:  math.MaxUint64 - 1,
+			want:  3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rb := &RingBuffer[int]{
+				buf:   make([]int, 8),
+				write: tt.write,
+				read:  tt.read,
+			}
+
+			if got := rb.Len(); got != tt.want {
+				t.Errorf("Len() = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRingBufferAvailable(t *testing.T) {
+	rb, err := NewRingBuffer[int](4)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name string
+		want uint64
+	}{
+		{"empty", 4},
+		{"one", 3},
+		{"two", 2},
+		{"three", 1},
+		{"full", 0},
+		{"overwrite", 0},
+	}
+
+	for i, tt := range tests {
+		if i > 0 {
+			rb.Write(i)
+		}
+
+		t.Run(tt.name, func(t *testing.T) {
+			if got := rb.Available(); got != tt.want {
+				t.Errorf("Available() = %d, want %d", got, tt.want)
+			}
+		})
 	}
 }
 

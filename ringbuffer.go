@@ -1,15 +1,8 @@
 // Package ringbuffer はリングバッファを実装します。
+// 単体ではスレッドセーフに対応していません。
 package ringbuffer
 
-import (
-	"fmt"
-)
-
-// IRingBuffer はリングバッファの読み書きインターフェースです.
-type IRingBuffer[T any] interface {
-	Write(v T)
-	Read() (T, bool)
-}
+import "fmt"
 
 // RingBuffer は固定長のリングバッファです.
 type RingBuffer[T any] struct {
@@ -20,6 +13,7 @@ type RingBuffer[T any] struct {
 }
 
 // Write はリングバッファへ書き込みます。
+// バッファが満杯の場合、最も古いデータを上書きします。
 func (rb *RingBuffer[T]) Write(v T) {
 	// 満杯ならreadを進める
 	if rb.write-rb.read == uint64(len(rb.buf)) {
@@ -50,6 +44,17 @@ func (rb *RingBuffer[T]) Read() (T, bool) {
 	return ret, true
 }
 
+// Len はリングバッファに残っているデータ数を返します。
+func (rb *RingBuffer[T]) Len() uint64 {
+	return rb.write - rb.read
+}
+
+// Available はリングバッファに追加可能なデータ数を返します。
+// 上書きせずに格納できる残り件数です。
+func (rb *RingBuffer[T]) Available() uint64 {
+	return uint64(len(rb.buf)) - rb.Len()
+}
+
 // NewRingBuffer は指定したサイズのリングバッファを作成します。
 func NewRingBuffer[T any](size uint64) (*RingBuffer[T], error) {
 	// 2のn乗であるかチェック
@@ -59,5 +64,5 @@ func NewRingBuffer[T any](size uint64) (*RingBuffer[T], error) {
 			mask: size - 1,
 		}, nil
 	}
-	return nil, fmt.Errorf("2の累乗を指定してください")
+	return nil, fmt.Errorf("invalid size %d: must be a power of two", size)
 }
